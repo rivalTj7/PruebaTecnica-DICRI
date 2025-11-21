@@ -1,11 +1,9 @@
-name: CD - Deploy to Railway
+# OBSOLETO - Usar gcp-deploy.yml en su lugar
+# Este workflow está deshabilitado, Railway ya no se usa
+name: CD - Deploy to Railway (DEPRECATED)
 
 on:
-  push:
-    branches:
-      - main
-      - staging
-      - develop
+  workflow_dispatch: # Solo ejecución manual
 
 env:
   NODE_VERSION: '18.x'

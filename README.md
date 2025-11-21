@@ -110,8 +110,14 @@ El Sistema de Gestión de Evidencias DICRI es una aplicación web diseñada para
 - **Stored Procedures**: Toda la lógica de datos
 
 ### DevOps
-- **Docker**: Containerización
-- **Docker Compose**: Orquestación
+- **Docker**: Containerización (optimizado para Cloud Run)
+- **Docker Compose**: Orquestación local
+- **Google Cloud Platform**: Deployment en producción
+  - Cloud Run (serverless containers)
+  - Cloud SQL (SQL Server managed)
+  - Secret Manager (gestión de secretos)
+  - Container Registry (imágenes Docker)
+- **GitHub Actions**: CI/CD pipeline
 
 ### Testing
 - **Jest**: Unit tests
@@ -256,27 +262,95 @@ El sistema viene con usuarios precargados:
 
 ## 🚀 Deployment a Producción
 
-El sistema está configurado para deployment automático en Railway.app con CI/CD completo.
+El sistema está configurado para deployment automático en **Google Cloud Platform (GCP)** con CI/CD completo mediante GitHub Actions.
 
-### Quick Start - Deployment
+### ⚡ Quick Start - Deployment a GCP
 
-1. **Crear cuenta en Railway**: https://railway.app
-2. **Conectar repositorio GitHub**
-3. **Railway detectará Docker Compose automáticamente**
-4. **Configurar variables de entorno** (ver `.env.production.example`)
-5. **Deploy automático** en cada push a `main`
+**Opción más rápida** (Windows):
+```powershell
+.\GCP-SETUP-SCRIPT.ps1
+```
 
-Para instrucciones detalladas paso a paso, consulta **[DEPLOYMENT.md](./DEPLOYMENT.md)**.
+**O en Linux/Mac**:
+```bash
+bash GCP-SETUP-SCRIPT.sh
+```
 
-### CI/CD Pipeline
+Este script automáticamente:
+- ✅ Crea proyecto GCP `dicri-prod`
+- ✅ Habilita APIs necesarias (Cloud Run, Cloud SQL, Secret Manager)
+- ✅ Crea instancia Cloud SQL Server
+- ✅ Configura secrets (JWT, DB passwords)
+- ✅ Crea cuenta de servicio para GitHub Actions
+- ✅ Genera archivo `gcp-sa-key.json` con credenciales
 
-GitHub Actions ejecuta automáticamente en cada push:
-- ✅ Tests del backend (Jest + Supertest)
-- ✅ Lint del código (ESLint)
-- ✅ Build del frontend (Vite)
-- ✅ Validación de Docker images
+### 📋 Después del Script
 
-Ver workflow completo en `.github/workflows/ci.yml`.
+**1. Configurar GitHub Secrets**
+
+Ve a: `https://github.com/rivalTj7/PruebaTecnica-DICRI/settings/secrets/actions`
+
+Crea estos secrets:
+```
+GCP_PROJECT_ID = dicri-prod
+GCP_SA_KEY = (contenido completo de gcp-sa-key.json)
+```
+
+**2. Aplicar Schema de Base de Datos**
+
+```bash
+gcloud sql connect dicri-sqlserver --user=sqlserver --database=DICRI
+# Ejecutar: database/schema.sql, seed-data.sql, stored-procedures.sql
+```
+
+**3. Deploy Inicial**
+
+```bash
+git add .
+git commit -m "feat: configure GCP deployment"
+git push origin main
+```
+
+Esto activará automáticamente el workflow que desplegará backend y frontend a Cloud Run.
+
+### 🌐 Entornos de Deployment
+
+| Branch | Entorno | Backend URL | Frontend URL |
+|--------|---------|-------------|--------------|
+| `main` | Producción | `dicri-backend-prod-xxx.run.app` | `dicri-frontend-prod-xxx.run.app` |
+| `staging` | Staging | `dicri-backend-staging-xxx.run.app` | `dicri-frontend-staging-xxx.run.app` |
+| `develop` | Development | `dicri-backend-dev-xxx.run.app` | `dicri-frontend-dev-xxx.run.app` |
+
+### 💰 Costos Estimados
+
+```
+Cloud Run Backend:        $8-15/mes
+Cloud Run Frontend:       $5-10/mes
+Cloud SQL (2vCPU/7.5GB):  $200-350/mes
+Secret Manager:           $0.06/mes
+Container Registry:       $5-10/mes
+Network Egress:           $5-20/mes
+───────────────────────────────────
+TOTAL ESTIMADO:           $225-395/mes
+```
+
+### 📚 Documentación Detallada
+
+Para instrucciones completas paso a paso:
+- **[GCP-QUICKSTART.md](./GCP-QUICKSTART.md)** - Guía rápida de inicio
+- **[GCP-DEPLOYMENT.md](./GCP-DEPLOYMENT.md)** - Guía completa y detallada
+- **[cloudbuild.yaml](./cloudbuild.yaml)** - Configuración de Cloud Build
+
+### 🔄 CI/CD Pipeline (GitHub Actions)
+
+En cada push a `main`, `staging`, o `develop`:
+1. ✅ Build de imágenes Docker (backend + frontend)
+2. ✅ Push a Google Container Registry
+3. ✅ Deploy automático a Cloud Run
+4. ✅ Configuración de variables de entorno
+5. ✅ Health checks
+
+Ver workflow completo en `.github/workflows/gcp-deploy.yml`.
 
 ---
 
@@ -564,11 +638,13 @@ docker exec dicri-database /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "
 
 ## 📖 Documentación Adicional
 
-- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Guía completa de deployment a Railway con CI/CD
-- **[ARQUITECTURA.md](./ARQUITECTURA.md)** - Diagrama de arquitectura completo del sistema
+- **[GCP-QUICKSTART.md](./GCP-QUICKSTART.md)** - Guía rápida de deployment a GCP
+- **[GCP-DEPLOYMENT.md](./GCP-DEPLOYMENT.md)** - Guía completa de deployment a Google Cloud
+- **[ARQUITECTURA.md](./ARQUITECTURA.md)** - Diagrama de arquitectura del sistema
 - **[DIAGRAMA-ER.md](./DIAGRAMA-ER.md)** - Modelo entidad-relación de la base de datos
 - **[MANUAL-TECNICO.md](./MANUAL-TECNICO.md)** - Manual técnico con ejemplos de código
-- **[ENTREGABLES-CHECKLIST.md](./ENTREGABLES-CHECKLIST.md)** - Checklist de entregables para entrevista
+- **[ROLES-Y-PERMISOS.md](./ROLES-Y-PERMISOS.md)** - Sistema de roles y permisos
+- **[ENTREGABLES-CHECKLIST.md](./ENTREGABLES-CHECKLIST.md)** - Checklist de entregables
 - **Swagger Docs** - http://localhost:5001/api-docs - Documentación interactiva de la API
 
 ---
