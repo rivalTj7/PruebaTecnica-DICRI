@@ -7,7 +7,12 @@ npm-debug.log
 coverage
 .vscode
 .idea
-*.md
 docs/
 .git
-.github
+
+# Keep important config files
+!railway.json
+!railway.toml
+!railway.md
+!README.md
+!RAILWAY-SETUP.md
