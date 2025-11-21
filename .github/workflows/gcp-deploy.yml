@@ -80,10 +80,13 @@ jobs:
             --region ${{ env.GCP_REGION }} \
             --platform managed \
             --allow-unauthenticated \
-            --set-env-vars="NODE_ENV=production" \
+            --add-cloudsql-instances=dicri-prod:us-central1:dicri-sqlserver \
+            --set-env-vars="NODE_ENV=production,DB_HOST=34.56.187.66,DB_PORT=1433,DB_NAME=DICRI,DB_USER=sqlserver" \
+            --set-secrets="DB_PASSWORD=db-password:latest,JWT_SECRET=jwt-secret:latest,JWT_REFRESH_SECRET=jwt-refresh-secret:latest" \
             --memory 512Mi \
             --cpu 1 \
-            --max-instances 10
+            --max-instances 10 \
+            --timeout 300
       
       - name: Get Backend URL
         id: backend_url
