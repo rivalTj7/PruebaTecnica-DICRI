@@ -1,0 +1,120 @@
+name: PR Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  # Validar título del PR
+  validate-pr:
+    name: Validate PR
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    
+    steps:
+      - name: Check PR Title Format
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            perf
+            test
+            build
+            ci
+            chore
+            revert
+          requireScope: false
+      
+      - name: Check PR Size
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const additions = pr.additions;
+            const deletions = pr.deletions;
+            const total = additions + deletions;
+            
+            console.log(`PR changes: +${additions} -${deletions} (total: ${total})`);
+            
+            if (total > 1000) {
+              core.warning(`⚠️ This PR is quite large (${total} lines). Consider breaking it into smaller PRs.`);
+            }
+
+  # Ejecutar tests
+  run-tests:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+      
+      - name: Install Backend Dependencies
+        working-directory: ./backend
+        run: npm ci
+      
+      - name: Run Backend Tests
+        working-directory: ./backend
+        run: npm test
+        env:
+          NODE_ENV: test
+          JWT_SECRET: test-secret
+          JWT_REFRESH_SECRET: test-refresh-secret
+      
+      - name: Install Frontend Dependencies
+        working-directory: ./frontend
+        run: npm ci
+      
+      - name: Build Frontend
+        working-directory: ./frontend
+        run: npm run build
+        env:
+          VITE_API_URL: https://api-test.example.com
+
+  # Comentar resultados en el PR
+  comment-results:
+    name: Comment PR Results
+    runs-on: ubuntu-latest
+    needs: [validate-pr, run-tests]
+    if: always() && github.event.pull_request.draft == false
+    
+    steps:
+      - name: Comment PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const validationStatus = '${{ needs.validate-pr.result }}';
+            const testsStatus = '${{ needs.run-tests.result }}';
+            
+            let body = '## 🔍 PR Checks Results\n\n';
+            body += `- **Validation**: ${validationStatus === 'success' ? '✅' : '❌'}\n`;
+            body += `- **Tests**: ${testsStatus === 'success' ? '✅' : '❌'}\n\n`;
+            
+            if (validationStatus === 'success' && testsStatus === 'success') {
+              body += '✅ **All checks passed!** This PR is ready for review.';
+            } else {
+              body += '❌ **Some checks failed.** Please review the errors above.';
+            }
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });

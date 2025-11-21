@@ -1,0 +1,22 @@
+{
+  "phases": {
+    "setup": {
+      "nixPkgs": ["nodejs-18_x"]
+    },
+    "install": {
+      "cmds": [
+        "cd frontend",
+        "npm ci"
+      ]
+    },
+    "build": {
+      "cmds": [
+        "cd frontend",
+        "npm run build"
+      ]
+    }
+  },
+  "start": {
+    "cmd": "cd frontend && npm start"
+  }
+}

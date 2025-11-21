@@ -1,0 +1,17 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "npm start"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10
+
+# Configuración específica para Railway
+[environments.production]
+startCommand = "npm run migrate && npm start"
+
+[environments.staging]
+startCommand = "npm run migrate && npm start"
+
+[environments.development]
+startCommand = "npm run migrate && npm start"
