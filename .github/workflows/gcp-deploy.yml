@@ -10,6 +10,7 @@ on:
 env:
   GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   GCP_REGION: us-central1
+  ARTIFACT_REGISTRY: us-central1-docker.pkg.dev
 
 jobs:
   deploy:
@@ -46,36 +47,36 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
       
-      - name: Configure Docker for GCR
+      - name: Configure Docker for Artifact Registry
         run: |
-          gcloud auth configure-docker gcr.io
+          gcloud auth configure-docker ${{ env.ARTIFACT_REGISTRY }}
       
       - name: Build Backend Image
         run: |
-          docker build -t gcr.io/${{ env.GCP_PROJECT_ID }}/${{ steps.env.outputs.backend_service }}:${{ github.sha }} \
-                       -t gcr.io/${{ env.GCP_PROJECT_ID }}/${{ steps.env.outputs.backend_service }}:latest \
+          docker build -t ${{ env.ARTIFACT_REGISTRY }}/${{ env.GCP_PROJECT_ID }}/dicri-docker/${{ steps.env.outputs.backend_service }}:${{ github.sha }} \
+                       -t ${{ env.ARTIFACT_REGISTRY }}/${{ env.GCP_PROJECT_ID }}/dicri-docker/${{ steps.env.outputs.backend_service }}:latest \
                        -f backend/Dockerfile .
       
       - name: Build Frontend Image
         run: |
-          docker build -t gcr.io/${{ env.GCP_PROJECT_ID }}/${{ steps.env.outputs.frontend_service }}:${{ github.sha }} \
-                       -t gcr.io/${{ env.GCP_PROJECT_ID }}/${{ steps.env.outputs.frontend_service }}:latest \
+          docker build -t ${{ env.ARTIFACT_REGISTRY }}/${{ env.GCP_PROJECT_ID }}/dicri-docker/${{ steps.env.outputs.frontend_service }}:${{ github.sha }} \
+                       -t ${{ env.ARTIFACT_REGISTRY }}/${{ env.GCP_PROJECT_ID }}/dicri-docker/${{ steps.env.outputs.frontend_service }}:latest \
                        -f frontend/Dockerfile .
       
       - name: Push Backend Image
         run: |
-          docker push gcr.io/${{ env.GCP_PROJECT_ID }}/${{ steps.env.outputs.backend_service }}:${{ github.sha }}
-          docker push gcr.io/${{ env.GCP_PROJECT_ID }}/${{ steps.env.outputs.backend_service }}:latest
+          docker push ${{ env.ARTIFACT_REGISTRY }}/${{ env.GCP_PROJECT_ID }}/dicri-docker/${{ steps.env.outputs.backend_service }}:${{ github.sha }}
+          docker push ${{ env.ARTIFACT_REGISTRY }}/${{ env.GCP_PROJECT_ID }}/dicri-docker/${{ steps.env.outputs.backend_service }}:latest
       
       - name: Push Frontend Image
         run: |
-          docker push gcr.io/${{ env.GCP_PROJECT_ID }}/${{ steps.env.outputs.frontend_service }}:${{ github.sha }}
-          docker push gcr.io/${{ env.GCP_PROJECT_ID }}/${{ steps.env.outputs.frontend_service }}:latest
+          docker push ${{ env.ARTIFACT_REGISTRY }}/${{ env.GCP_PROJECT_ID }}/dicri-docker/${{ steps.env.outputs.frontend_service }}:${{ github.sha }}
+          docker push ${{ env.ARTIFACT_REGISTRY }}/${{ env.GCP_PROJECT_ID }}/dicri-docker/${{ steps.env.outputs.frontend_service }}:latest
       
       - name: Deploy Backend to Cloud Run
         run: |
           gcloud run deploy ${{ steps.env.outputs.backend_service }} \
-            --image gcr.io/${{ env.GCP_PROJECT_ID }}/${{ steps.env.outputs.backend_service }}:${{ github.sha }} \
+            --image ${{ env.ARTIFACT_REGISTRY }}/${{ env.GCP_PROJECT_ID }}/dicri-docker/${{ steps.env.outputs.backend_service }}:${{ github.sha }} \
             --region ${{ env.GCP_REGION }} \
             --platform managed \
             --allow-unauthenticated \
@@ -95,7 +96,7 @@ jobs:
       - name: Deploy Frontend to Cloud Run
         run: |
           gcloud run deploy ${{ steps.env.outputs.frontend_service }} \
-            --image gcr.io/${{ env.GCP_PROJECT_ID }}/${{ steps.env.outputs.frontend_service }}:${{ github.sha }} \
+            --image ${{ env.ARTIFACT_REGISTRY }}/${{ env.GCP_PROJECT_ID }}/dicri-docker/${{ steps.env.outputs.frontend_service }}:${{ github.sha }} \
             --region ${{ env.GCP_REGION }} \
             --platform managed \
             --allow-unauthenticated \
